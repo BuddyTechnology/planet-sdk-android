@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
     private ImageView mActionCamera;
     private TextView mExitRoom;
     private TextView mActionSwitch;
+    private View mRemoteMask;
 
     private boolean mOpenCamera;
     private String mRoomId;
@@ -61,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
         mActionCamera = (ImageView) findViewById(R.id.action_camera);
         mExitRoom = (TextView) findViewById(R.id.exit_room);
         mActionSwitch = (TextView) findViewById(R.id.action_switch);
+        mRemoteMask = findViewById(R.id.mask);
 
         initView();
         bindListener();
@@ -75,7 +77,6 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
     }
 
 
-
     //绑定控件事件
     private void bindListener() {
         Rtc.initialize(getApplication());
@@ -86,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
                     @Override
                     public void run() {
                         Toast.makeText(MainActivity.this, "获得token=" + token, Toast.LENGTH_SHORT).show();
+                        Rtc.openCamera(MainActivity.this, mLocalSurface, mRemoteSurface);
                     }
                 });
             }
@@ -94,32 +96,7 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
         mActionRoom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!mOpenCamera) {
-                    Toast.makeText(MainActivity.this, "请先打开相机", Toast.LENGTH_LONG).show();
-                    return;
-                }
                 showRoomDialog();
-            }
-        });
-
-        mActionCamera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mOpenCamera) {
-                    return;
-                }
-                mActionSwitch.setVisibility(View.VISIBLE);
-                //保证拿到token之后再调用openCamera
-                Rtc.openCamera(MainActivity.this, mLocalSurface, mRemoteSurface);
-                mOpenCamera = true;
-                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
-            }
-        });
-
-        mExitRoom.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showExitRoomDialog();
             }
         });
 
@@ -127,6 +104,13 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
             @Override
             public void onClick(View v) {
                 Rtc.switchCamera(mLocalSurface);
+            }
+        });
+
+        mActionCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                exitRoom();
             }
         });
 
@@ -191,17 +175,16 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
 
         mExitRoom.setVisibility(View.GONE);
         mActionRoom.setVisibility(View.VISIBLE);
-        mActionCamera.setVisibility(View.VISIBLE);
 
-        mActionCamera.setImageResource(R.mipmap.icon_camera);
         mCallConnected = false;
         updateVideoView();
     }
 
     /**
      * 收到加入房间消息
-     * @param roomId    房间ID
-     * @param payload   额外信息
+     *
+     * @param roomId  房间ID
+     * @param payload 额外信息
      */
     @Override
     public void onJoinRoom(final String roomId, String payload) {
@@ -215,16 +198,16 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
 
     /**
      * 收到离开房间消息
-     * @param roomId    房间ID
-     * @param payload   额外信息
+     *
+     * @param roomId  房间ID
+     * @param payload 额外信息
      */
     @Override
     public void onLeaveRoom(final String roomId, String payload) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mCallConnected = false;
-                updateVideoView();
+                exitRoom();
                 Toast.makeText(MainActivity.this, "对方已离开房间 roomId=" + roomId, Toast.LENGTH_LONG).show();
             }
         });
@@ -232,8 +215,9 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
 
     /**
      * 收到房间消息
-     * @param roomId    房间ID
-     * @param payload   额外信息
+     *
+     * @param roomId  房间ID
+     * @param payload 额外信息
      */
     @Override
     public void onRoomMessage(final String roomId, final String payload) {
@@ -243,6 +227,17 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
                 Toast.makeText(MainActivity.this, "roomId=" + roomId + " 收到消息:" + payload, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /**
+     * 房间会话消息
+     *
+     * @param roomId  房间Id
+     * @param session 会话Id
+     */
+    @Override
+    public void onRoomSession(String roomId, String session) {
+
     }
 
     /**
@@ -260,8 +255,9 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
 
     /**
      * 错误回调
-     * @param code      错误代码 {@link im.facechat.common.constants.FCErrCode}
-     * @param errorMsg  错误信息
+     *
+     * @param code     错误代码
+     * @param errorMsg 错误信息
      */
     @Override
     public void onError(final int code, final String errorMsg) {
@@ -283,14 +279,6 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
             public void run() {
                 mCallConnected = true;
                 updateVideoView();
-                mActionCamera.setVisibility(View.VISIBLE);
-                mActionCamera.setImageResource(R.mipmap.end_call_button);
-                mActionCamera.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        exitRoom();
-                    }
-                });
             }
         });
 
@@ -305,17 +293,20 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
     }
 
     private void updateVideoView() {
+        if (mCallConnected) {
+            mRemoteMask.setVisibility(View.GONE);
+            mActionCamera.setVisibility(View.VISIBLE);
+        } else {
+            mRemoteMask.setVisibility(View.VISIBLE);
+            mActionCamera.setVisibility(View.GONE);
+        }
+
         mRemoteSurfaceLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, REMOTE_HEIGHT);
         mRemoteSurface.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
         mRemoteSurface.setMirror(false);
 
-        if (mCallConnected) {
-            mLocalSurfaceLayout.setPosition(LOCAL_X_CONNECTED, LOCAL_Y_CONNECTED, LOCAL_WIDTH_CONNECTED, LOCAL_HEIGHT_CONNECTED);
-            mLocalSurface.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
-        } else {
-            mLocalSurfaceLayout.setPosition(LOCAL_X_CONNECTING, LOCAL_Y_CONNECTING, LOCAL_WIDTH_CONNECTING, LOCAL_HEIGHT_CONNECTING);
-            mLocalSurface.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FILL);
-        }
+        mLocalSurfaceLayout.setPosition(LOCAL_X_CONNECTED, LOCAL_Y_CONNECTED, LOCAL_WIDTH_CONNECTED, LOCAL_HEIGHT_CONNECTED);
+        mLocalSurface.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
 
         mLocalSurface.requestLayout();
         mRemoteSurface.requestLayout();

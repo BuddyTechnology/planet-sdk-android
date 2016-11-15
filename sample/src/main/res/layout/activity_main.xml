@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="im.facechat.sample.MainActivity">
+    android:keepScreenOn="true"
+    tools:context=".MainActivity">
 
     <im.facechat.view.PercentFrameLayout
         android:id="@+id/remote_surface_layout"
@@ -15,6 +16,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
+        <View
+            android:id="@+id/mask"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#e2853d" />
     </im.facechat.view.PercentFrameLayout>
 
 
@@ -55,7 +61,7 @@
             android:padding="5dp"
             android:textColor="#fff532"
             android:textSize="14sp"
-            android:visibility="gone" />
+            android:visibility="gone"/>
 
         <TextView
             android:id="@+id/action_switch"
@@ -65,8 +71,7 @@
             android:padding="16dp"
             android:text="切换"
             android:textColor="@color/colorPrimary"
-            android:textSize="16sp"
-            android:visibility="gone" />
+            android:textSize="16sp" />
 
         <ImageView
             android:id="@+id/action_camera"
@@ -75,7 +80,8 @@
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
             android:padding="20dp"
-            android:src="@mipmap/icon_camera" />
+            android:src="@mipmap/end_call_button"
+            android:visibility="gone"/>
 
     </RelativeLayout>
 
