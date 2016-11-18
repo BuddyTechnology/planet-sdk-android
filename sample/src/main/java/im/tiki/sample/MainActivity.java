@@ -7,7 +7,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -244,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements Rtc.FCRoomEvent {
      * 网络状况不稳定
      */
     @Override
-    public void onNetworkUnstable() {
+    public void onNetwork(int code) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
